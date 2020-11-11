@@ -16,7 +16,7 @@ defmodule ClusterUtil do
   end
 
   def restart_other_node(app) do
-    Cluster.rpc_other_node(__MODULE__, :restart_cur_node, [app])
+    :ok = Cluster.rpc_other_node(__MODULE__, :restart_cur_node, [app])
   end
 
   def restart_cur_node(app) do
