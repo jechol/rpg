@@ -10,32 +10,32 @@ defmodule Rpg.MultiNodesTest do
 
       {:ok, _pid} = @pg.start(scope)
       {:ok, _pid} = Cluster.rpc_other_node(@pg, :start, [scope])
-      local_pid = self()
-      remote_pid = ClusterUtil.spawn_on_other_node()
+      local = self()
+      remote = Node.spawn(Cluster.other_node(), Process, :sleep, [:infinity])
 
-      {:ok, %{scope: scope, local_pid: local_pid, remote_pid: remote_pid}}
+      {:ok, %{scope: scope, local: local, remote: remote}}
     end
 
     test "join, leave, get_members, get_local_members", %{
       scope: scope,
-      local_pid: local_pid,
-      remote_pid: remote_pid
+      local: local,
+      remote: remote
     } do
       # Join from local
-      :ok = @pg.join(scope, :group1, local_pid)
+      :ok = @pg.join(scope, :group1, local)
       # Join from remote
-      :ok = Cluster.rpc_other_node(@pg, :join, [scope, :group1, remote_pid])
+      :ok = Cluster.rpc_other_node(@pg, :join, [scope, :group1, remote])
 
       # Check members are synced
       Process.sleep(200)
-      assert @pg.get_members(scope, :group1) == [remote_pid, local_pid]
-      assert @pg.get_local_members(scope, :group1) == [local_pid]
-      assert Cluster.rpc_other_node(@pg, :get_local_members, [scope, :group1]) == [remote_pid]
+      assert @pg.get_members(scope, :group1) == [remote, local]
+      assert @pg.get_local_members(scope, :group1) == [local]
+      assert Cluster.rpc_other_node(@pg, :get_local_members, [scope, :group1]) == [remote]
 
       # Leave from local
-      :ok = @pg.leave(scope, :group1, local_pid)
+      :ok = @pg.leave(scope, :group1, local)
       # Leave from remote
-      :ok = Cluster.rpc_other_node(@pg, :leave, [scope, :group1, remote_pid])
+      :ok = Cluster.rpc_other_node(@pg, :leave, [scope, :group1, remote])
 
       # Check members are synced
       Process.sleep(200)
@@ -44,13 +44,13 @@ defmodule Rpg.MultiNodesTest do
       assert Cluster.rpc_other_node(@pg, :get_local_members, [scope, :group1]) == []
     end
 
-    test "restart remote", %{scope: scope, local_pid: local_pid} do
+    test "restart remote", %{scope: scope, local: local} do
       # Join from local
-      :ok = @pg.join(scope, :group1, local_pid)
+      :ok = @pg.join(scope, :group1, local)
 
       # Check remote is synced
       Process.sleep(200)
-      assert Cluster.rpc_other_node(@pg, :get_members, [scope, :group1]) == [local_pid]
+      assert Cluster.rpc_other_node(@pg, :get_members, [scope, :group1]) == [local]
 
       # Kill remote scope
       # remote_scope_pid = Cluster.rpc_other_node(Process, :whereis, [scope])
@@ -71,17 +71,17 @@ defmodule Rpg.MultiNodesTest do
       # Restart remote scope and check remote is synced again
       {:ok, _new_scope_pid} = Cluster.rpc_other_node(@pg, :start, [scope])
       Process.sleep(200)
-      assert Cluster.rpc_other_node(@pg, :get_members, [scope, :group1]) == [local_pid]
+      assert Cluster.rpc_other_node(@pg, :get_members, [scope, :group1]) == [local]
     end
 
-    test "restart local", %{scope: scope, remote_pid: remote_pid} do
+    test "restart local", %{scope: scope, remote: remote} do
       # Join from remote
-      :ok = Cluster.rpc_other_node(@pg, :join, [scope, :group1, remote_pid])
-      assert Cluster.rpc_other_node(@pg, :get_members, [scope, :group1]) == [remote_pid]
+      :ok = Cluster.rpc_other_node(@pg, :join, [scope, :group1, remote])
+      assert Cluster.rpc_other_node(@pg, :get_members, [scope, :group1]) == [remote]
 
       # Check local is synced
       Process.sleep(200)
-      assert @pg.get_members(scope, :group1) == [remote_pid]
+      assert @pg.get_members(scope, :group1) == [remote]
 
       # Kill local scope
       scope_pid = Process.whereis(scope)
@@ -99,7 +99,7 @@ defmodule Rpg.MultiNodesTest do
       # Restart local scope and check local is synced again
       {:ok, _new_scope_pid} = @pg.start(scope)
       Process.sleep(200)
-      assert @pg.get_members(scope, :group1) == [remote_pid]
+      assert @pg.get_members(scope, :group1) == [remote]
     end
   end
 end

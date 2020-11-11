@@ -10,31 +10,31 @@ defmodule Rpg.NodeDownTest do
 
       {:ok, _pid} = @pg.start(scope)
       {:ok, _pid} = Cluster.rpc_other_node(@pg, :start, [scope])
-      local_pid = self()
-      remote_pid = ClusterUtil.spawn_on_other_node()
+      local = self()
+      remote = Node.spawn(Cluster.other_node(), Process, :sleep, [:infinity])
 
-      {:ok, %{scope: scope, local_pid: local_pid, remote_pid: remote_pid}}
+      {:ok, %{scope: scope, local: local, remote: remote}}
     end
 
     test "remote members are removed when remote node is down", %{
       scope: scope,
-      local_pid: local_pid,
-      remote_pid: remote_pid
+      local: local,
+      remote: remote
     } do
       # Join from local
-      :ok = @pg.join(scope, :group1, local_pid)
+      :ok = @pg.join(scope, :group1, local)
       # Join from remote
-      :ok = Cluster.rpc_other_node(@pg, :join, [scope, :group1, remote_pid])
+      :ok = Cluster.rpc_other_node(@pg, :join, [scope, :group1, remote])
 
       # Check members are synced
       Process.sleep(200)
-      assert @pg.get_members(scope, :group1) == [remote_pid, local_pid]
+      assert @pg.get_members(scope, :group1) == [remote, local]
 
       Cluster.stop_other_node()
 
       # Check remote members are removed
       Process.sleep(200)
-      assert @pg.get_members(scope, :group1) == [local_pid]
+      assert @pg.get_members(scope, :group1) == [local]
     end
   end
 end
