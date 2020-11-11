@@ -1,92 +1,55 @@
 defmodule Rpg.SingleNodeTest do
-  @moduledoc false
-
   use ExUnit.Case
-  doctest Rpg
 
-  setup do
-    ClusterUtil.restart_cur_node(:rpg)
-  end
+  for pg <- [:pg] do
+    @pg pg
 
-  test "initial state" do
-    assert Rpg.which_groups() == []
-  end
+    setup %{test: test} do
+      {:ok, _pid} = @pg.start_link(test)
+      :ok
+    end
 
-  test "create group" do
-    :ok = Rpg.create(:test_group)
+    test "initial state", %{test: test} do
+      assert @pg.which_groups(test) == []
+    end
 
-    assert Rpg.which_groups() == [:test_group]
-  end
+    test "join group", %{test: test} do
+      :ok = @pg.join(test, :test_group, self())
+      assert @pg.get_members(test, :test_group) == [self()]
+      assert @pg.get_local_members(test, :test_group) == [self()]
 
-  test "delete group" do
-    :ok = Rpg.create(:test_group)
-    :ok = Rpg.delete(:test_group)
+      :ok = @pg.join(test, :test_group, self())
+      assert @pg.get_members(test, :test_group) == [self(), self()]
+      assert @pg.get_local_members(test, :test_group) == [self(), self()]
 
-    assert Rpg.which_groups() == []
-  end
+      pid = spawn_link(Process, :sleep, [:infinity])
+      :ok = @pg.join(test, :test_group, pid)
+      assert @pg.get_members(test, :test_group) == [pid, self(), self()]
+      assert @pg.get_local_members(test, :test_group) == [pid, self(), self()]
+    end
 
-  test "join group" do
-    :ok = Rpg.create(:test_group)
-    :ok = Rpg.join(:test_group, self())
+    test "leave group", %{test: test} do
+      :ok = @pg.join(test, :test_group, self())
+      :ok = @pg.leave(test, :test_group, self())
 
-    assert Rpg.get_members(:test_group) == [self()]
-    assert Rpg.get_local_members(:test_group) == [self()]
-    assert Rpg.get_closest_pid(:test_group) == self()
-  end
+      assert @pg.get_members(test, :test_group) == []
+      assert @pg.get_local_members(test, :test_group) == []
+    end
 
-  test "leave group" do
-    :ok = Rpg.create(:test_group)
+    test "member dies", %{test: test} do
+      other_pid =
+        spawn_link(fn ->
+          receive do
+            :exit -> :ok
+          end
+        end)
 
-    :ok = Rpg.join(:test_group, self())
-    :ok = Rpg.leave(:test_group, self())
+      :ok = @pg.join(test, :test_group, other_pid)
+      assert @pg.get_members(test, :test_group) == [other_pid]
 
-    assert Rpg.get_members(:test_group) == []
-    assert Rpg.get_local_members(:test_group) == []
-    assert Rpg.get_closest_pid(:test_group) == {:error, {:no_process, :test_group}}
-  end
-
-  test "get closest pid returns random member" do
-    :rand.seed(:exsplus, {0, 0, 1})
-
-    assert Rpg.get_closest_pid(:test_group) == {:error, {:no_such_group, :test_group}}
-
-    other_pid =
-      spawn_link(fn ->
-        Process.sleep(:infinity)
-      end)
-
-    :ok = Rpg.create(:test_group)
-    :ok = Rpg.join(:test_group, self())
-    :ok = Rpg.join(:test_group, other_pid)
-
-    assert Rpg.get_closest_pid(:test_group) == self()
-    assert Rpg.get_closest_pid(:test_group) == other_pid
-  end
-
-  test "member dies" do
-    other_pid =
-      spawn_link(fn ->
-        receive do
-          :exit -> :ok
-        end
-      end)
-
-    :ok = Rpg.create(:test_group)
-    :ok = Rpg.join(:test_group, other_pid)
-
-    assert Rpg.get_closest_pid(:test_group) == other_pid
-
-    send(other_pid, :exit)
-    # We should wait enough for pg2 to process 'DOWN'
-    Process.sleep(100)
-
-    assert Rpg.get_closest_pid(:test_group) == {:error, {:no_process, :test_group}}
-  end
-
-  test "worker should log unexpected calls" do
-    assert ExUnit.CaptureLog.capture_log(fn ->
-             catch_exit(GenServer.call(Rpg.Worker, :unexpected_message))
-           end) =~
-             "The Rpg server received an unexpected message:\nhandle_call(:unexpected_message"
+      send(other_pid, :exit)
+      Process.sleep(100)
+      assert @pg.get_members(test, :test_group) == []
+    end
   end
 end
