@@ -16,20 +16,24 @@ defmodule Rpg.MultiNodesTest do
       {:ok, %{scope: scope, local_pid: local_pid, remote_pid: remote_pid}}
     end
 
-    test "join, leave, get_members, get_local_members", %{scope: scope, remote_pid: remote_pid} do
+    test "join, leave, get_members, get_local_members", %{
+      scope: scope,
+      local_pid: local_pid,
+      remote_pid: remote_pid
+    } do
       # Join from local
-      :ok = @pg.join(scope, :group1, self())
+      :ok = @pg.join(scope, :group1, local_pid)
       # Join from remote
       :ok = Cluster.rpc_other_node(@pg, :join, [scope, :group1, remote_pid])
 
       # Check members are synced
       Process.sleep(200)
-      assert @pg.get_members(scope, :group1) == [remote_pid, self()]
-      assert @pg.get_local_members(scope, :group1) == [self()]
+      assert @pg.get_members(scope, :group1) == [remote_pid, local_pid]
+      assert @pg.get_local_members(scope, :group1) == [local_pid]
       assert Cluster.rpc_other_node(@pg, :get_local_members, [scope, :group1]) == [remote_pid]
 
       # Leave from local
-      :ok = @pg.leave(scope, :group1, self())
+      :ok = @pg.leave(scope, :group1, local_pid)
       # Leave from remote
       :ok = Cluster.rpc_other_node(@pg, :leave, [scope, :group1, remote_pid])
 
