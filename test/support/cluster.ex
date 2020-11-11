@@ -9,6 +9,8 @@ defmodule Cluster do
   end
 
   def start_other_node() do
+    ensure_epmd_started()
+
     # Turn node into a distributed node
     {:ok, _pid} = Node.start(@this_name, :shortnames)
 
@@ -48,6 +50,17 @@ defmodule Cluster do
   end
 
   # Private
+
+  defp ensure_epmd_started() do
+    case :erl_epmd.names() do
+      {:error, _} ->
+        :os.cmd('epmd -daemon')
+        :ok
+
+      {:ok, _} ->
+        :ok
+    end
+  end
 
   defp spawn_other_node() do
     {:ok, node} = :slave.start(:net_adm.localhost(), @other_name, inet_loader_args())
