@@ -5,51 +5,74 @@ defmodule Rpg.SingleNodeTest do
     @pg pg
 
     setup %{test: test} do
+      scope = test
       {:ok, _pid} = @pg.start_link(test)
-      :ok
+      {:ok, %{scope: scope}}
     end
 
-    test "initial state", %{test: test} do
-      assert @pg.which_groups(test) == []
+    test "which_groups", %{scope: scope} do
+      assert @pg.which_groups(scope) == []
+
+      pid1 = self()
+      :ok = @pg.join(scope, :group1, pid1)
+      :ok = @pg.join(scope, :group2, pid1)
+      assert @pg.which_groups(scope) == [:group2, :group1]
     end
 
-    test "join group", %{test: test} do
-      :ok = @pg.join(test, :test_group, self())
-      assert @pg.get_members(test, :test_group) == [self()]
-      assert @pg.get_local_members(test, :test_group) == [self()]
+    test "join group", %{scope: scope} do
+      pid1 = self()
 
-      :ok = @pg.join(test, :test_group, self())
-      assert @pg.get_members(test, :test_group) == [self(), self()]
-      assert @pg.get_local_members(test, :test_group) == [self(), self()]
+      :ok = @pg.join(scope, :group1, pid1)
+      assert @pg.get_members(scope, :group1) == [pid1]
+      assert @pg.get_local_members(scope, :group1) == [pid1]
 
-      pid = spawn_link(Process, :sleep, [:infinity])
-      :ok = @pg.join(test, :test_group, pid)
-      assert @pg.get_members(test, :test_group) == [pid, self(), self()]
-      assert @pg.get_local_members(test, :test_group) == [pid, self(), self()]
+      # Join twice
+      :ok = @pg.join(scope, :group1, pid1)
+      assert @pg.get_members(scope, :group1) == [pid1, pid1]
+      assert @pg.get_local_members(scope, :group1) == [pid1, pid1]
+
+      pid2 = spawn_link(Process, :sleep, [:infinity])
+      :ok = @pg.join(scope, :group1, pid2)
+      assert @pg.get_members(scope, :group1) == [pid2, pid1, pid1]
+      assert @pg.get_local_members(scope, :group1) == [pid2, pid1, pid1]
     end
 
-    test "leave group", %{test: test} do
-      :ok = @pg.join(test, :test_group, self())
-      :ok = @pg.leave(test, :test_group, self())
+    test "leave group", %{scope: scope} do
+      pid1 = self()
 
-      assert @pg.get_members(test, :test_group) == []
-      assert @pg.get_local_members(test, :test_group) == []
+      # Join twice
+      :ok = @pg.join(scope, :group1, pid1)
+      :ok = @pg.join(scope, :group1, pid1)
+
+      # Leave once
+      :ok = @pg.leave(scope, :group1, pid1)
+      assert @pg.get_members(scope, :group1) == [pid1]
+
+      # Leave once more
+      :ok = @pg.leave(scope, :group1, pid1)
+      assert @pg.get_members(scope, :group1) == []
+      assert @pg.get_local_members(scope, :group1) == []
     end
 
-    test "member dies", %{test: test} do
-      other_pid =
+    test "member dies", %{scope: scope} do
+      pid1 =
         spawn_link(fn ->
           receive do
             :exit -> :ok
           end
         end)
 
-      :ok = @pg.join(test, :test_group, other_pid)
-      assert @pg.get_members(test, :test_group) == [other_pid]
+      # Join twice
+      :ok = @pg.join(scope, :group1, pid1)
+      :ok = @pg.join(scope, :group1, pid1)
+      assert @pg.get_members(scope, :group1) == [pid1, pid1]
 
-      send(other_pid, :exit)
+      # Kill pid1
+      send(pid1, :exit)
+
+      # Wait for pg to catch DOWN
       Process.sleep(100)
-      assert @pg.get_members(test, :test_group) == []
+      assert @pg.get_members(scope, :group1) == []
     end
   end
 end
