@@ -30,9 +30,17 @@ defmodule Rpg.NodeDownTest do
       Process.sleep(200)
       assert @pg.get_members(scope, :group1) == [remote, local]
 
-      Cluster.stop_other_node()
+      # BOOM! Stop other node
+      other_node = Cluster.other_node()
+      Node.monitor(other_node, true)
+      :slave.stop(other_node)
 
-      # Check remote members are removed
+      receive do
+        {:nodedown, ^other_node} ->
+          :ok
+      end
+
+      # Check remote member is removed
       Process.sleep(200)
       assert @pg.get_members(scope, :group1) == [local]
     end

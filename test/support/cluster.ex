@@ -8,19 +8,6 @@ defmodule Cluster do
     end
   end
 
-  def start_other_node() do
-    ensure_epmd_started()
-
-    # Turn node into a distributed node
-    {:ok, _pid} = Node.start(@this_name, :shortnames)
-
-    # Allow other nodes to fetch code from this node
-    {:ok, _pid} = allow_boot()
-
-    # Spawn other node
-    spawn_other_node()
-  end
-
   def rpc_other_node(m, f, a) do
     :rpc.block_call(other_node(), m, f, a)
   end
@@ -34,11 +21,10 @@ defmodule Cluster do
         Node.monitor(other, true)
         :slave.stop(other)
 
-        :ok =
-          receive do
-            {:nodedown, ^other} ->
-              :ok
-          end
+        receive do
+          {:nodedown, ^other} ->
+            :ok
+        end
     end
   end
 
@@ -50,6 +36,19 @@ defmodule Cluster do
   end
 
   # Private
+
+  defp start_other_node() do
+    ensure_epmd_started()
+
+    # Turn node into a distributed node
+    {:ok, _pid} = Node.start(@this_name, :shortnames)
+
+    # Allow other nodes to fetch code from this node
+    {:ok, _pid} = allow_boot()
+
+    # Spawn other node
+    spawn_other_node()
+  end
 
   defp ensure_epmd_started() do
     case :erl_epmd.names() do
