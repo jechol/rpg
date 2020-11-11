@@ -1,18 +1,15 @@
 defmodule Rpg do
-  @moduledoc """
-  Documentation for `Rpg`.
-  """
+  use GenServer
 
-  @doc """
-  Hello world.
+  @default_scope __MODULE__
 
-  ## Examples
+  def start_link(), do: start_link(@default_scope)
 
-      iex> Rpg.hello()
-      :world
+  def start_link(scope) when is_atom(scope) do
+    GenServer.start_link(__MODULE__, [scope], name: scope)
+  end
 
-  """
-  def hello do
-    :world
+  def start(scope) do
+    GenServer.start(__MODULE__, [scope], name: scope)
   end
 end
