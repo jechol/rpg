@@ -1,6 +1,6 @@
-defmodule Repg do
+defmodule Rpg do
   @moduledoc """
-  Documentation for `Repg`.
+  Documentation for `Rpg`.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule Repg do
 
   ## Examples
 
-      iex> Repg.hello()
+      iex> Rpg.hello()
       :world
 
   """
