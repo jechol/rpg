@@ -1,28 +1,27 @@
 defmodule Rpg.SingleNodeTest do
   use ExUnit.Case
 
-  # for pg <- [:pg, Rpg] do
-  for pg <- [Rpg] do
+  for pg <- [:pg, Rpg] do
     @pg pg
-
     setup %{test: test} do
-      scope = :"#{@pg}-#{test}"
-      {:ok, _pid} = @pg.start_link(scope)
-      {:ok, %{scope: scope}}
+      pg = unquote(pg)
+      scope = :"#{pg}-#{test}"
+      {:ok, _pid} = pg.start_link(scope)
+      {:ok, %{pg: pg, scope: scope}}
     end
 
-    test "#{pg} which_groups", %{scope: scope} do
-      assert @pg.which_groups(scope) == []
+    test "#{pg} which_groups", %{pg: pg, scope: scope} do
+      assert pg.which_groups(scope |> IO.inspect()) == []
 
       pid1 = self()
-      :ok = @pg.join(scope, :group1, pid1)
-      :ok = @pg.join(scope, :group2, pid1)
+      :ok = pg.join(scope, :group1, pid1)
+      :ok = pg.join(scope, :group2, pid1)
 
-      assert @pg.which_groups(scope) |> Enum.member?(:group1)
-      assert @pg.which_groups(scope) |> Enum.member?(:group2)
+      assert pg.which_groups(scope) |> Enum.member?(:group1)
+      assert pg.which_groups(scope) |> Enum.member?(:group2)
     end
 
-    test "#{pg} join group", %{scope: scope} do
+    test "#{@pg} join group", %{scope: scope} do
       pid1 = self()
 
       :ok = @pg.join(scope, :group1, pid1)
@@ -40,7 +39,7 @@ defmodule Rpg.SingleNodeTest do
       assert @pg.get_local_members(scope, :group1) == [pid2, pid1, pid1]
     end
 
-    test "#{pg} leave group", %{scope: scope} do
+    test "#{@pg} leave group", %{scope: scope} do
       pid1 = self()
 
       # Join twice
@@ -57,7 +56,7 @@ defmodule Rpg.SingleNodeTest do
       assert @pg.get_local_members(scope, :group1) == []
     end
 
-    test "#{pg} member dies", %{scope: scope} do
+    test "#{@pg} member dies", %{scope: scope} do
       pid1 =
         spawn_link(fn ->
           receive do
