@@ -108,16 +108,12 @@ defmodule Rpg do
   end
 
   def handle_info({:nodeup, node}, %State{scope: scope} = state) do
-    IO.puts("node up!!!!!!!!!!!!!!!!!!!!")
-    IO.inspect({:nodeup, node})
     :erlang.send({scope, node}, {:discover, self()})
 
     {:noreply, state}
   end
 
   def handle_info({:discover, peer}, %State{groups: groups, peers: peers} = state) do
-    IO.puts("discover!!!!!!!!!!!!!!!!!!!!")
-    IO.inspect({:discover, peer})
     # Send local groups
     groups_with_local_procs =
       groups
@@ -198,8 +194,7 @@ defmodule Rpg do
   end
 
   # remote pid is joining the group
-  def handle_info({:join, peer, group, pid} = msg, %State{groups: groups, peers: peers} = state) do
-    IO.inspect({msg, state})
+  def handle_info({:join, peer, group, pid}, %State{groups: groups, peers: peers} = state) do
     {m_ref, peer_groups} = Map.get(peers, peer)
 
     new_groups = groups |> join_remote_group(group, [pid])
@@ -225,8 +220,7 @@ defmodule Rpg do
     new_peer_groups =
       joined_groups
       |> Enum.reduce(peer_groups, fn joined_group, peer_groups ->
-        pids = peer_groups |> Map.get(joined_group)
-        peer_groups |> Map.put(peer, pids |> List.delete(pid))
+        peer_groups |> Map.update!(joined_group, fn pids -> pids |> List.delete(pid) end)
       end)
 
     new_peers = peers |> Map.put(peer, {m_ref, new_peer_groups})
