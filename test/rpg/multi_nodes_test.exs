@@ -1,7 +1,7 @@
 defmodule Rpg.MultiNodesTest do
   use ExUnit.Case
 
-  for pg <- [:pg] do
+  for pg <- [:pg, Rpg] do
     setup %{test: test} do
       pg = unquote(pg)
       scope = :"#{pg}-#{test}"
@@ -65,9 +65,6 @@ defmodule Rpg.MultiNodesTest do
         {:DOWN, ^ref, :process, ^scope_pid, :killed} -> :ok
       end
 
-      # get_members returns empty when scope is not started
-      assert Cluster.rpc_other_node(pg, :get_members, [scope, :group1]) == []
-
       # Restart remote scope and check remote is synced again
       {:ok, _new_scope_pid} = Cluster.rpc_other_node(pg, :start, [scope])
       Process.sleep(200)
@@ -92,9 +89,6 @@ defmodule Rpg.MultiNodesTest do
       receive do
         {:DOWN, ^ref, :process, ^scope_pid, :killed} -> :ok
       end
-
-      # get_members return empty when scope is not started
-      assert pg.get_members(scope, :group1) == []
 
       # Restart local scope and check local is synced again
       {:ok, _new_scope_pid} = pg.start(scope)
