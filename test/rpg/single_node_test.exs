@@ -1,16 +1,17 @@
 defmodule Rpg.SingleNodeTest do
   use ExUnit.Case
 
-  for pg <- [:pg] do
+  # for pg <- [:pg, Rpg] do
+  for pg <- [Rpg] do
     @pg pg
 
     setup %{test: test} do
-      scope = test
+      scope = :"#{@pg}-#{test}" |> IO.inspect()
       {:ok, _pid} = @pg.start_link(test)
       {:ok, %{scope: scope}}
     end
 
-    test "which_groups", %{scope: scope} do
+    test "#{pg} which_groups", %{scope: scope} do
       assert @pg.which_groups(scope) == []
 
       pid1 = self()
@@ -19,7 +20,7 @@ defmodule Rpg.SingleNodeTest do
       assert @pg.which_groups(scope) == [:group2, :group1]
     end
 
-    test "join group", %{scope: scope} do
+    test "#{pg} join group", %{scope: scope} do
       pid1 = self()
 
       :ok = @pg.join(scope, :group1, pid1)
@@ -37,7 +38,7 @@ defmodule Rpg.SingleNodeTest do
       assert @pg.get_local_members(scope, :group1) == [pid2, pid1, pid1]
     end
 
-    test "leave group", %{scope: scope} do
+    test "#{pg} leave group", %{scope: scope} do
       pid1 = self()
 
       # Join twice
@@ -54,7 +55,7 @@ defmodule Rpg.SingleNodeTest do
       assert @pg.get_local_members(scope, :group1) == []
     end
 
-    test "member dies", %{scope: scope} do
+    test "#{pg} member dies", %{scope: scope} do
       pid1 =
         spawn_link(fn ->
           receive do
