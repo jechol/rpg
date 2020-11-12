@@ -1,7 +1,7 @@
 defmodule Rpg do
   use GenServer
 
-  def start_link(scope) when is_atom(scope) do
+  def start_link(scope \\ __MODULE__) when is_atom(scope) do
     GenServer.start_link(__MODULE__, [scope], name: scope)
   end
 
@@ -11,25 +11,25 @@ defmodule Rpg do
 
   # Write
 
-  def join(scope, group, pid) when is_pid(pid) do
+  def join(scope \\ __MODULE__, group, pid) when is_pid(pid) do
     GenServer.call(scope, {:join_local, group, pid})
   end
 
-  def leave(scope, group, pid) when is_pid(pid) do
+  def leave(scope \\ __MODULE__, group, pid) when is_pid(pid) do
     GenServer.call(scope, {:leave_local, group, pid})
   end
 
   # Read
 
-  def get_members(scope, group) do
+  def get_members(scope \\ __MODULE__, group) do
     GenServer.call(scope, {:get_members, group})
   end
 
-  def get_local_members(scope, group) do
+  def get_local_members(scope \\ __MODULE__, group) do
     GenServer.call(scope, {:get_local_members, group})
   end
 
-  def which_groups(scope) do
+  def which_groups(scope \\ __MODULE__) do
     GenServer.call(scope, {:which_groups})
   end
 
