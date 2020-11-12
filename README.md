@@ -1,21 +1,12 @@
-# Rpg
+# Rpg (Re-impl of Erlang/OTP pg)
 
-**TODO: Add description**
+This is re-implementation of Erlang/OTP pg module in Elixir for learning purpose.
 
-## Installation
+Major differences are summarized below.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `rpg` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:rpg, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/rpg](https://hexdocs.pm/rpg).
-
+|                            	| pg                          	| Rpg                      	|
+|----------------------------	|-----------------------------	|--------------------------	|
+| Language                   	| Erlang                      	| Elixir                   	|
+| Component                  	| gen_server + ets (scalable) 	| GenServer (not scalable) 	|
+| Code size (except comment) 	| 349 lines                   	| 222 lines                	|
+| Production ready           	| Absolutely                  	| Definitely NO            	|
