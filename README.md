@@ -8,5 +8,5 @@ Major differences are summarized below.
 |----------------------------	|-----------------------------	|--------------------------	|
 | Language                   	| Erlang                      	| Elixir                   	|
 | Component                  	| gen_server + ets (scalable) 	| GenServer (limited)     	|
-| Code size (except comment) 	| 349 lines                   	| 217 lines                	|
+| Code size (except comment) 	| 349 lines                   	| 215 lines                	|
 | Production ready           	| Absolutely                  	| Definitely no            	|

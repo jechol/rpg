@@ -185,8 +185,7 @@ defmodule Rpg do
         {:DOWN, m_ref, :process, peer, _info},
         %State{groups: groups, peers: peers} = state
       ) do
-    {^m_ref, peer_groups} = peers |> Map.get(peer)
-    new_peers = peers |> Map.delete(peer)
+    {{^m_ref, peer_groups}, new_peers} = peers |> Map.pop(peer)
 
     new_groups =
       peer_groups
@@ -290,8 +289,7 @@ defmodule Rpg do
         local_members |> Map.delete(pid)
 
       {m_ref, groups} ->
-        new_groups = groups |> List.delete(group)
-        local_members |> Map.put(pid, {m_ref, new_groups})
+        local_members |> Map.put(pid, {m_ref, groups |> List.delete(group)})
     end
   end
 
