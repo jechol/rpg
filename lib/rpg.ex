@@ -87,7 +87,19 @@ defmodule Rpg do
     {:reply, :ok, %State{state | local_members: new_local_members, groups: new_groups}}
   end
 
-  # Cast
+  def handle_call({:get_members, group}, _from, %State{groups: groups} = state) do
+    {all, _local} = groups |> Map.get(group, {[], []})
+    {:reply, all, state}
+  end
+
+  def handle_call({:get_local_members, group}, _from, %State{groups: groups} = state) do
+    {_all, local} = groups |> Map.get(group, {[], []})
+    {:reply, local, state}
+  end
+
+  def handle_call({:which_groups}, _from, %State{groups: groups} = state) do
+    {:reply, groups |> Map.keys(), state}
+  end
 
   # Info
 
@@ -134,13 +146,13 @@ defmodule Rpg do
   end
 
   def handle_info({:nodedown, _node}, state) do
-    # We need only :nodeup. Peer's 'DOWN' signal will arrive soon.
+    # We need only :nodeup. Peer's :DOWN signal will arrive soon.
     {:noreply, state}
   end
 
   # handle local process exit
   def handle_info(
-        {'DOWN', m_ref, :process, pid, _info},
+        {:DOWN, m_ref, :process, pid, _info},
         %State{local_members: local_members, groups: groups, peers: peers} = state
       )
       when node(pid) == :erlang.node() do
@@ -166,7 +178,7 @@ defmodule Rpg do
 
   # handle remote peer down or leaving overlay network
   def handle_info(
-        {'DOWN', m_ref, :process, peer, _info},
+        {:DOWN, m_ref, :process, peer, _info},
         %State{groups: groups, peers: peers} = state
       ) do
     {^m_ref, peer_groups} = peers |> Map.get(peer)

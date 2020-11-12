@@ -6,8 +6,8 @@ defmodule Rpg.SingleNodeTest do
     @pg pg
 
     setup %{test: test} do
-      scope = :"#{@pg}-#{test}" |> IO.inspect()
-      {:ok, _pid} = @pg.start_link(test)
+      scope = :"#{@pg}-#{test}"
+      {:ok, _pid} = @pg.start_link(scope)
       {:ok, %{scope: scope}}
     end
 
@@ -17,7 +17,9 @@ defmodule Rpg.SingleNodeTest do
       pid1 = self()
       :ok = @pg.join(scope, :group1, pid1)
       :ok = @pg.join(scope, :group2, pid1)
-      assert @pg.which_groups(scope) == [:group2, :group1]
+
+      assert @pg.which_groups(scope) |> Enum.member?(:group1)
+      assert @pg.which_groups(scope) |> Enum.member?(:group2)
     end
 
     test "#{pg} join group", %{scope: scope} do
