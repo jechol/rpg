@@ -7,6 +7,6 @@ Major differences are summarized below.
 |                            	| pg                          	| Rpg                      	|
 |----------------------------	|-----------------------------	|--------------------------	|
 | Language                   	| Erlang                      	| Elixir                   	|
-| Component                  	| gen_server + ets (scalable) 	| GenServer (not scalable) 	|
-| Code size (except comment) 	| 349 lines                   	| 222 lines                	|
-| Production ready           	| Absolutely                  	| Definitely NO            	|
+| Component                  	| gen_server + ets (scalable) 	| GenServer (limited)     	|
+| Code size (except comment) 	| 349 lines                   	| 217 lines                	|
+| Production ready           	| Absolutely                  	| Definitely no            	|

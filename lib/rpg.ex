@@ -140,9 +140,13 @@ defmodule Rpg do
     end
   end
 
-  def handle_info({:sync, peer, peer_groups}, %State{} = state) do
-    new_state = apply_sync_data(state, peer, peer_groups)
-    {:noreply, new_state}
+  def handle_info({:sync, peer, new_peer_groups}, %State{peers: peers, groups: groups} = state) do
+    {m_ref, old_peer_groups} = peers |> Map.get_lazy(peer, fn -> {Process.monitor(peer), %{}} end)
+
+    new_groups = sync_groups(groups, old_peer_groups, new_peer_groups)
+    new_peers = peers |> Map.put(peer, {m_ref, new_peer_groups})
+
+    {:noreply, %State{state | groups: new_groups, peers: new_peers}}
   end
 
   def handle_info({:nodedown, _node}, state) do
@@ -226,16 +230,6 @@ defmodule Rpg do
     new_peers = peers |> Map.put(peer, {m_ref, new_peer_groups})
 
     {:noreply, %State{state | groups: new_groups, peers: new_peers}}
-  end
-
-  defp apply_sync_data(%State{peers: peers, groups: groups} = state, peer, new_peer_groups)
-       when is_pid(peer) do
-    {m_ref, old_peer_groups} = peers |> Map.get_lazy(peer, fn -> {Process.monitor(peer), %{}} end)
-
-    new_groups = sync_groups(groups, old_peer_groups, new_peer_groups)
-    new_peers = peers |> Map.put(peer, {m_ref, new_peer_groups})
-
-    %State{state | groups: new_groups, peers: new_peers}
   end
 
   defp sync_groups(groups, %{} = old_peer_groups, %{} = new_peer_groups) do
