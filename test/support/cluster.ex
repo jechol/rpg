@@ -19,7 +19,7 @@ defmodule Cluster do
 
       other ->
         Node.monitor(other, true)
-        :slave.stop(other)
+        :ok = :slave.stop(other)
 
         receive do
           {:nodedown, ^other} ->
@@ -41,10 +41,10 @@ defmodule Cluster do
     ensure_epmd_started()
 
     # Turn node into a distributed node
-    {:ok, _pid} = Node.start(@this_name, :shortnames)
+    Node.start(@this_name, :shortnames)
 
     # Allow other nodes to fetch code from this node
-    {:ok, _pid} = allow_boot()
+    allow_boot()
 
     # Spawn other node
     spawn_other_node()
@@ -78,7 +78,7 @@ defmodule Cluster do
   defp allow_boot() do
     localhost = :net_adm.localhost()
 
-    {:ok, _pid} = :erl_boot_server.start([localhost])
+    :erl_boot_server.start([localhost])
   end
 
   defp add_code_paths(node) do
