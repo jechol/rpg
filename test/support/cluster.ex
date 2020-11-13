@@ -2,6 +2,11 @@ defmodule Cluster do
   @this_name :foo
   @other_name :bar
 
+  def ensure_non_distributed() do
+    _ = Node.stop()
+    false = Node.alive?()
+  end
+
   def ensure_other_node_started() do
     if other_node() == nil do
       start_other_node()

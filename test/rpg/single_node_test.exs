@@ -2,11 +2,11 @@ defmodule Rpg.SingleNodeTest do
   use ExUnit.Case
 
   for pg <- [:pg, Rpg] do
-    setup %{test: test} do
-      pg = unquote(pg)
-      scope = :"#{pg}-#{test}"
-      {:ok, _pid} = pg.start_link(scope)
-      {:ok, %{pg: pg, scope: scope}}
+    setup do
+      %{pg: unquote(pg)}
+
+      # This setup is defined per each pg,
+      # so setup with side effect are located end of this file.
     end
 
     test "#{pg} which_groups", %{pg: pg, scope: scope} do
@@ -75,5 +75,11 @@ defmodule Rpg.SingleNodeTest do
       Process.sleep(100)
       assert pg.get_members(scope, :group1) == []
     end
+  end
+
+  setup %{pg: pg, test: scope} do
+    Cluster.ensure_non_distributed()
+    {:ok, _pid} = pg.start(scope)
+    %{pg: pg, scope: scope}
   end
 end

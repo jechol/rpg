@@ -2,17 +2,8 @@ defmodule Rpg.MultiNodesTest do
   use ExUnit.Case
 
   for pg <- [:pg, Rpg] do
-    setup %{test: test} do
-      pg = unquote(pg)
-      scope = :"#{pg}-#{test}"
-      Cluster.ensure_other_node_started()
-
-      {:ok, _pid} = pg.start(scope)
-      {:ok, _pid} = Cluster.rpc_other_node(pg, :start, [scope])
-      local = self()
-      remote = Node.spawn(Cluster.other_node(), Process, :sleep, [:infinity])
-
-      {:ok, %{pg: pg, scope: scope, local: local, remote: remote}}
+    setup do
+      %{pg: unquote(pg)}
     end
 
     test "#{pg} join, leave, get_members, get_local_members", %{
@@ -95,5 +86,16 @@ defmodule Rpg.MultiNodesTest do
       Process.sleep(200)
       assert pg.get_members(scope, :group1) == [remote]
     end
+  end
+
+  setup %{pg: pg, test: scope} do
+    Cluster.ensure_other_node_started()
+
+    {:ok, _pid} = pg.start(scope)
+    {:ok, _pid} = Cluster.rpc_other_node(pg, :start, [scope])
+    local = self()
+    remote = Node.spawn(Cluster.other_node(), Process, :sleep, [:infinity])
+
+    %{pg: pg, scope: scope, local: local, remote: remote}
   end
 end

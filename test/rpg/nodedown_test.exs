@@ -2,17 +2,8 @@ defmodule Rpg.NodeDownTest do
   use ExUnit.Case
 
   for pg <- [:pg, Rpg] do
-    setup %{test: test} do
-      pg = unquote(pg)
-      scope = :"#{pg}-#{test}"
-      Cluster.ensure_other_node_started()
-
-      {:ok, _pid} = pg.start(scope)
-      {:ok, _pid} = Cluster.rpc_other_node(pg, :start, [scope])
-      local = self()
-      remote = Node.spawn(Cluster.other_node(), Process, :sleep, [:infinity])
-
-      {:ok, %{pg: pg, scope: scope, local: local, remote: remote}}
+    setup do
+      %{pg: unquote(pg)}
     end
 
     test "#{pg} remote members are removed when remote node is down", %{
@@ -44,5 +35,16 @@ defmodule Rpg.NodeDownTest do
       Process.sleep(200)
       assert pg.get_members(scope, :group1) == [local]
     end
+  end
+
+  setup %{pg: pg, test: scope} do
+    Cluster.ensure_other_node_started()
+
+    {:ok, _pid} = pg.start(scope)
+    {:ok, _pid} = Cluster.rpc_other_node(pg, :start, [scope])
+    local = self()
+    remote = Node.spawn(Cluster.other_node(), Process, :sleep, [:infinity])
+
+    %{pg: pg, scope: scope, local: local, remote: remote}
   end
 end
