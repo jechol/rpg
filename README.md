@@ -1,3 +1,4 @@
+![mix test](https://github.com/jechol/rpg/workflows/mix%20test/badge.svg)
 # Rpg (Re-impl of Erlang/OTP pg)
 
 This is re-implementation of Erlang/OTP pg module in Elixir for learning purpose.
